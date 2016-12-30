@@ -15,7 +15,8 @@ body {
 	}
 }
 .entry-content {
-	@include font-size(16);
+	@include font-size(12);
+	line-height: 1.2;
 	// Dotted line underlines for links
 	p > a,
 	li > a {

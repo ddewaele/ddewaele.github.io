@@ -4,7 +4,7 @@ pre.highlight {
 
 .highlight {
 	margin-bottom: 1.5em;
-	@include font-rem(12);
+	@include font-rem(10);
 	line-height: 1.5;
 	color: #d0d0d0;
 	border: 1px solid darken($body-color, 5);
@@ -77,7 +77,7 @@ pre.highlight {
 	.il { color: #ae81ff } /* Literal.Number.Integer.Long */
 }
 
-.highlight { background-color: #fdf6e3; color: #586e75 }
+.highlight { background-color: #e7e9ee; color: #586e75 }
 .highlight .c { color: #93a1a1 } /* Comment */
 .highlight .err { color: #586e75 } /* Error */
 .highlight .g { color: #586e75 } /* Generic */

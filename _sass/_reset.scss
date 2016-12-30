@@ -96,6 +96,12 @@ img {
 // -------------------------
 table {
   width: 100%;
+  border-style: solid;
+  border-width: 1px;
+}
+
+thead {
+  background: #cccccc;  
 }
 
 // Prevent max-width from affecting Google Maps
