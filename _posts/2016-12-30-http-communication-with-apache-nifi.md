@@ -88,6 +88,31 @@ Key: 'uuid'
 
 The NiFi provenance viewer will also show you a nice formattedview of the payload
 
+```java
+String softwareModuleType1 = "Base OS Image";
+String softwareModuleType2 = "Software Module";
+String softwareModuleType3 = "Configuration Module";
+
+LOGGER.info("Creating software module type {}", softwareModuleType1);
+final List<SoftwareModuleTypeRest> createdSoftwareModuleTypes1 = softwareModuleTypeResource
+        .createSoftwareModuleTypes(
+                new SoftwareModuleTypeBuilder().key(softwareModuleType1).name(softwareModuleType1).maxAssignments(1).build())
+        .getBody();
+
+LOGGER.info("Creating software module type {}", softwareModuleType2);
+final List<SoftwareModuleTypeRest> createdSoftwareModuleTypes2 = softwareModuleTypeResource
+        .createSoftwareModuleTypes(
+                new SoftwareModuleTypeBuilder().key(softwareModuleType2).name(softwareModuleType2).maxAssignments(1).build())
+        .getBody();
+
+
+LOGGER.info("Creating software module type {}", softwareModuleType3);
+final List<SoftwareModuleTypeRest> createdSoftwareModuleTypes3 = softwareModuleTypeResource
+        .createSoftwareModuleTypes(
+                new SoftwareModuleTypeBuilder().key(softwareModuleType3).name(softwareModuleType3).maxAssignments(1).build())
+        .getBody();
+```
+
 ![]({{ site.url }}/assets/images/nifi/http/json-payload.png)
 
 ## Thoughts and use-cases
