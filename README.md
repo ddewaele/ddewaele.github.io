@@ -27,7 +27,8 @@ bundle exec jekyll s  -c _config.yml,_localhost_config.yml --drafts
 This blog is using [jekyll-compose](https://github.com/jekyll/jekyll-compose) (defined in the Gemfile), so to create pages/posts/drafts you can do
 
 ```
-$ bundle exec jekyll page "My New Page"
 $ bundle exec jekyll post "My New Post"
+$ bundle exec jekyll page "My New Page"
 $ bundle exec jekyll draft "My new draft"
+$ bundle exec jekyll publish _drafts/mydraft
 ```
