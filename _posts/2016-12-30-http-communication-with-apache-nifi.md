@@ -37,7 +37,7 @@ For each processor we're going to take a closer look at
 
 Where as the ListenHTTP acts as an HTTP server, exposing an HTTP resource for the outside world to consume, The [GetHTTP processor](https://nifi.apache.org/docs/nifi-docs/components/org.apache.nifi.processors.standard.GetHTTP/) is a true client. Its job is to connect to an HTTP endpoint, and process the response as a FlowFile so that it can be further pushed upstream.
 
-In this example we're going to be using the GetHTTP processor to access the Nifi REST API. 
+In this example we're going to be using the GetHTTP processor to access the Nifi REST API located at [http://localhost:8080/nifi-api/system-diagnostics](http://localhost:8080/nifi-api/system-diagnostics) . 
 
 ![]({{ site.url }}/assets/images/nifi/http/getHttp-flow.png)
 
@@ -47,13 +47,25 @@ The GetHTTP processor needs to be configured with the target host / path that we
 
 ![]({{ site.url }}/assets/images/nifi/http/getHttp-props.png)
 
-Although it is nice that the GetTCP processor supports the NiFi Expression Language so that we can make the URL dynamic, the fact that the processor doesn't accept incoming flowfiles does limit its use-cases.
+Although it is nice that the GetTCP processor supports the NiFi Expression Language so that we can make the URL dynamic, the fact that the processor doesn't accept incoming flowfiles does limit its usage. It means we cannot trigger this processor based on other flowfiles / attributes that are running in our dataflow.
 
-Suppose we have a dynamic list of REST endpoints that we want to query then we cannot use this processor. For that we would need to look at the InvokeHTTP processor.
+Imagine a case where would need to call a whole bunch of endpoints, defined in a text-file:
+
+```
+http://localhost:7101/users
+http://localhost:7102/users
+http://localhost:7103/users
+http://localhost:7104/users
+http://localhost:7105/users
+```
+
+Nifi has processors to read files, split them line by line, and push that information into the flow (as either flowfiles or as attributes). If the processor would be capable of handling incoming flowfiles, we could trigger it for each server addres found in the list. Unfortunately, this type of use-case is not possible with this processor. 
+
+For that we would need to look at the InvokeHTTP processor that we'll discuss later on.
 
 ## Processor scheduling
 
-Before we didn't need to schedule the processor, as it was constantly listening for HTTP requests. As we now have a processor from a client perspective, we don't want it constantly firing HTTP requests. As this processor cannot be triggered by incoming flowfiles, we need to setup the scheduling ourselves. This processor is typically scheduled using either a timer or cron based schedule.
+You'll probably want to schedule this processor, as out of the box it will constantly spit out GET requests. As this processor cannot be triggered by incoming flowfiles, we need to setup the scheduling ourselves. This processor is typically scheduled using either a timer or cron based schedule.
 
 ![]({{ site.url }}/assets/images/nifi/http/getHttp-scheduling.png)
 
@@ -93,10 +105,10 @@ The NiFi provenance viewer will also show you a nice formattedview of the payloa
 ## Thoughts and use-cases
 
 - Very simple processor with only 1 outgoing relationship (success)
-- No error transitions possible
+- Limited to GET requests (hence the name)
+- No error transitions possible. The processor will simply go into error if it cannot reach the server, or receives a non 2xx code.
 - Does not allow for incoming connections
 - Good for simple polling scenarios, where NiFi needs to periodically fetch data from a remote resource.
-
 
 <a name="PostHTTP"></a>
 
@@ -112,56 +124,37 @@ In this example we're going to be using the PostHTTP processor to access a simpl
 
 ### Processor configuration
 
-The PostHTTP processor needs to be configured with the target host / path that we want to connect to.
+The PostHTTP processor needs to be configured with the target host / path that we want to connect to, much like the GetHTTP processor
 
 ![]({{ site.url }}/assets/images/nifi/http/postHttp-props.png)
 
 In contrast to the GetTCP processor, the PostHTTP processor does allow incoming flowfiles so that they can be used as the payload of the POST request.
 
-### Processor scheduling
+## Processor scheduling
 
-Before we didn't need to schedule the processor, as it was constantly listening for HTTP requests. As we now have a processor from a client perspective, we don't want it constantly firing HTTP requests. As this processor cannot be triggered by incoming flowfiles, we need to setup the scheduling ourselves. This processor is typically scheduled using either a timer or cron based schedule.
+As this processor is triggered by incoming flowfiles, we don't need to setup scheduling ourselves.
 
-![]({{ site.url }}/assets/images/nifi/http/getHttp-scheduling.png)
+![]({{ site.url }}/assets/images/nifi/http/postHttp-scheduling.png)
 
 ### Data flow
 
-If we look at the logfile you should see this every 30 seconds :
+Coming back to the previous scenario we discribed, where Nifi would be used to access a number of servers based on a text file, this scenario can be accomplished.
 
-```
-2016-12-30 20:57:47,662 INFO [Timer-Driven Process Thread-3] o.a.n.processors.standard.LogAttribute LogAttribute[id=13911575-1180-107b-6ee4-0040928adf51] logging for flow file StandardFlowFileRecord[uuid=407681f9-fd1a-4c14-8bea-c2dd0230540b,claim=StandardContentClaim [resourceClaim=StandardResourceClaim[id=1483127389761-379, container=default, section=379], offset=885598, length=122],offset=0,name=2420839022986047,size=122]
---------------------------------------------------
-Standard FlowFile Attributes
-Key: 'entryDate'
-        Value: 'Fri Dec 30 20:57:47 UTC 2016'
-Key: 'lineageStartDate'
-        Value: 'Fri Dec 30 20:57:47 UTC 2016'
-Key: 'fileSize'
-        Value: '122'
-FlowFile Attribute Map Content
-Key: 'filename'
-        Value: '2420839022986047'
-Key: 'path'
-        Value: './'
-Key: 'uuid'
-        Value: '407681f9-fd1a-4c14-8bea-c2dd0230540b'
---------------------------------------------------
-{
-   "firstName":"first_d6e20941-b061-4b5e-a7dc-a7aca5201652",
-   "lastName":"last_b3b8a5ce-7b3b-4044-a3f3-80de807b6bb4"
-}
-```
+If you look at the flow below, you can see that we
 
-The NiFi provenance viewer will also show you a nice formattedview of the payload
+- Read a text file containing a list of server endpoints
+- We split that text file content line per line (resulting in 1 flowfile per line)
+- We push that flowfile content into an attribute
+- We replace the flowfile content with a payload that we want to send to the server
+- We push that flowfile into the PostHTTP processor
 
-![]({{ site.url }}/assets/images/nifi/http/json-payload.png)
+![]({{ site.url }}/assets/images/nifi/http/postHttp-dynamic.png)
 
 ### Thoughts and use-cases
 
-- Very simple processor with only 1 outgoing relationship (success)
-- No error transitions possible
-- Does not allow for incoming connections
-- Good for simple polling scenarios, where NiFi needs to periodically fetch data from a remote resource.
+- Limited to HTTP POSTs
+- Supports a success and error transitions
+- Allows for incoming flowfiles.
 
 <a name="ListenHTTP"></a>
 
@@ -169,7 +162,9 @@ The NiFi provenance viewer will also show you a nice formattedview of the payloa
 
 ### Flow definition
 
-The [ListenHTTP processor](https://nifi.apache.org/docs/nifi-docs/components/org.apache.nifi.processors.standard.ListenHTTP/) starts an HTTP endpoint / web server. As such you can think of it as a server component. 
+So far we've looked at 2 processors that act as a client. They go out and access HTTP based resources. Nifi itself also comes with a processor that can create an HTTP based resources so that external clients can call the processor.
+
+The [ListenHTTP processor](https://nifi.apache.org/docs/nifi-docs/components/org.apache.nifi.processors.standard.ListenHTTP/) is such a processor. It starts an HTTP endpoint / web server. As such you can think of it as a server component. 
 
 Nifi runs by default on port 8080, and can be accessed using [http://localhost:8080/nifi](http://localhost:8080/nifi). When you start a ListenHTTP processor you start an additional webserver for the sole purpose of handling requests from external clients and converting those requests into Flowfiles that you use within your flow.
 
@@ -186,8 +181,6 @@ This processor is limited in functionality.
 - it will always return an HTTP 200 code to the client.
 - it only supports the HTTP POST method
 - it does not support incoming flowfiles. It can only be triggered from outside the flow.
-
-It does have some throttling capabilities and allows for source ip whitelisting.
 
 ### Processor configuration
 
@@ -306,14 +299,13 @@ The payload that we sent is put into a flowFile and can be used upstream for fur
 - Does not allow for incoming connections
 - Good for setting up a very simple HTTP inbound endpoint in our dataflow for external clients to call. (to trigger some part of the flow)
 
-
 <a name="InvokeHTTP"></a>
 
 # InvokeHTTP
 
 ## Flow definition
 
-The [InvokeHTTP processor](https://nifi.apache.org/docs/nifi-docs/components/org.apache.nifi.processors.standard.InvokeHTTP/) is an HTTP client processor that can be configured in a dynamic way. It has a number of advantages as opposed to the GetTCP client processor we discussed.
+The [InvokeHTTP processor](https://nifi.apache.org/docs/nifi-docs/components/org.apache.nifi.processors.standard.InvokeHTTP/) is an HTTP client processor that can be configured in a dynamic way. It has a number of advantages as opposed to the GetTCP/PostTCP client processors we discussed earlier.
 
 - Both the HTTP endpoint URL and the HTTP method can be defined using the NiFi expression language.
 - The InvokeHTTP processor has a lot more routing options.
@@ -378,10 +370,9 @@ Key: 'uuid'
 
 ### Thoughts and use-cases
 
-- Combines the client and the server part.
 - Lots of error transitions possible, including retries.
 - Allows for incoming flowFiles from other processors
-- Fill NiFi EL support.
+- Full NiFi EL support.
 - Good for setting up an HTTP inbound endpoint in our dataflow for other processes to call
 
 <a name="HandlerHttpRequest"></a>
@@ -462,6 +453,5 @@ If you want to implement our own webservice in Nifi, with its own response handl
 |               ListenHTTP               | Exposes an HTTP endpoint                    | Simple to setup                           | Too simple / No EL support / No incoming flowfiles  | Provide a simple HTTP webhook into your flow                         |
 |                 GetHTTP                | Consume an HTTP (GET) endpoint                  | Simple to setup                           | Too simple /  No incoming flowfiles                 | Provide a simple HTTP client to poll an external http based resource |
 |                 PostHTTP                | Consume an HTTP (POST) endpoint            | Simple to setup                           | Too simple /  No incoming flowfiles                 | Provide a simple HTTP client to poll an external http based resource |
-
 |               InvokeHTTP               | Consume an HTTP endpoint                    | Supports EL / Incoming flowfiles          |                                                     | A much more dynamic GetHTTP flow                                     |
 | HandlerHttpRequest HandlerHttpResponse | Expose an HTTP endpoint and send a response | Allows you to implement a real webservice | 2 Seperate processors to setup + controller service | Implement a webservice in your flow                                  |
