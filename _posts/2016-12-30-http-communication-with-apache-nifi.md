@@ -61,7 +61,7 @@ Before we didn't need to schedule the processor, as it was constantly listening 
 
 If we look at the logfile you should see this every 30 seconds :
 
-```
+```text
 2016-12-28 16:58:33,561 INFO [Timer-Driven Process Thread-4] o.a.n.processors.standard.LogAttribute LogAttribute[id=01591074-6575-1391-9453-fc3988d88965] logging for flow file StandardFlowFileRecord[uuid=71a6ceed-312d-4d81-bb2d-f222f88f7b30,claim=StandardContentClaim [resourceClaim=StandardResourceClaim[id=1482936126260-2, container=default, section=2], offset=211997, length=1594],offset=0,name=system-diagnostics,size=1594]
 --------------------------------------------------
 Standard FlowFile Attributes
