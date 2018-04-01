@@ -427,7 +427,7 @@ As far a scheduling is concerned we can keep the defaults. The processor will be
 - Combines the client and the server part.
 - Lots of error transitions possible, including retries.
 - Allows for incoming flowFiles from other processors
-- Fill NiFi EL support.
+- Full NiFi EL support.
 - Good for setting up an HTTP inbound endpoint in our dataflow for other processes to call
 
 
